@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mondrian Style with Custom Timer</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: white;
+            display: flex;
+            flex-wrap: wrap;
+            height: 100vh;
+            width: 100vw;
+            position: relative;
+            transition: background-color 2s ease;
+        }
+        .block {
+            position: absolute;
+            border: 10px solid black;
+            box-sizing: border-box;
+            opacity: 0;
+            transform: scale(0.5) rotate(0deg);
+            transition: transform 2s ease, opacity 2s ease, background-color 1s ease;
+        }
+        .fade-in {
+            opacity: 1;
+        }
+        .clock {
+            font-size: 2em;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: black;
+            background-color: #ffffff;
+        }
+        #timer-settings {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+        #timer-settings label {
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="timer-settings">
+    <label for="timer-duration">Timer Duration (seconds):</label>
+    <input type="number" id="timer-duration" value="10" min="5" max="60">
+    <button id="start-timer">Start Timer</button>
+</div>
+
+<script>
+    const colors = ['#f2f2f2', '#ff0000', '#0000ff', '#ffff00', '#ffffff'];
+    const themes = ['#f2f2f2', '#e6e6fa', '#ffe4e1', '#fafad2', '#add8e6'];
+    const blocks = [];
+    let timerDuration = 10; // 타이머 지속 시간 (초)
+
+    const alarm = new Audio('https://www.soundjay.com/button/beep-07.wav'); // 경고음
+
+    function getRandomInt(max) {
+        return Math.floor(Math.random() * max);
+    }
+
+    function applyRandomAnimation(block) {
+        block.classList.add('fade-in');
+    }
+
+    function createBlock(x, y, width, height, isClock = false) {
+        const block = document.createElement('div');
+        block.className = isClock ? 'block clock' : 'block';
+        block.style.left = `${x}px`;
+        block.style.top = `${y}px`;
+        block.style.width = `${width}px`;
+        block.style.height = `${height}px`;
+
+        if (!isClock) {
+            block.style.backgroundColor = colors[getRandomInt(colors.length)];
+            block.addEventListener('click', () => {
+                block.style.backgroundColor = colors[getRandomInt(colors.length)];
+            });
+        }
+
+        applyRandomAnimation(block);
+        document.body.appendChild(block);
+        blocks.push(block);
+
+        if (isClock) {
+            updateClock(block);
+            setInterval(() => updateClock(block), 1000);
+        }
+    }
+
+    function updateClock(clockBlock) {
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        clockBlock.textContent = `${hours}:${minutes}:${seconds}`;
+    }
+
+    function generateMondrianLayout() {
+        const screenWidth = window.innerWidth;
+        const screenHeight = window.innerHeight;
+
+        // 다양한 크기와 위치로 블록 생성
+        createBlock(0, 0, screenWidth / 3, screenHeight / 2);
+        createBlock(screenWidth / 3, 0, (2 * screenWidth) / 3, screenHeight / 3);
+        createBlock(screenWidth / 3, screenHeight / 3, screenWidth / 3, screenHeight / 3);
+        createBlock((2 * screenWidth) / 3, screenHeight / 3, screenWidth / 3, screenHeight / 3);
+        createBlock(0, screenHeight / 2, screenWidth / 3, screenHeight / 2);
+        createBlock(screenWidth / 3, (2 * screenHeight) / 3, (2 * screenWidth) / 3, screenHeight / 3);
+
+        // 시계 블록 추가
+        createBlock((2 * screenWidth) / 3, (2 * screenHeight) / 3, screenWidth / 3, screenHeight / 3, true);
+    }
+
+    function startTimer() {
+        setTimeout(() => {
+            randomizeLayout();
+            changeTheme();
+            alarm.play(); // 타이머 종료 시 경고음 재생
+            startTimer(); // 타이머가 끝날 때마다 레이아웃 변경 후 다시 타이머 시작
+        }, timerDuration * 1000);
+    }
+
+    function randomizeLayout() {
+        const screenWidth = window.innerWidth;
+        const screenHeight = window.innerHeight;
+
+        blocks.forEach(block => {
+            if (!block.classList.contains('clock')) {
+                const width = getRandomInt(screenWidth / 2) + screenWidth / 6;
+                const height = getRandomInt(screenHeight / 2) + screenHeight / 6;
+                const x = getRandomInt(screenWidth - width);
+                const y = getRandomInt(screenHeight - height);
+                block.style.left = `${x}px`;
+                block.style.top = `${y}px`;
+                block.style.width = `${width}px`;
+                block.style.height = `${height}px`;
+                block.style.backgroundColor = colors[getRandomInt(colors.length)];
+            }
+        });
+    }
+
+    function changeTheme() {
+        const newTheme = themes[getRandomInt(themes.length)];
+        document.body.style.backgroundColor = newTheme;
+    }
+
+    document.getElementById('start-timer').addEventListener('click', () => {
+        const durationInput = document.getElementById('timer-duration');
+        timerDuration = parseInt(durationInput.value, 10);
+        startTimer();
+    });
+
+    generateMondrianLayout();
+
+    // 반응형 디자인
+    window.addEventListener('resize', () => {
+        blocks.forEach(block => {
+            block.remove();
+        });
+        blocks.length = 0;
+        generateMondrianLayout();
+    });
+</script>
+
+</body>
+</html>
